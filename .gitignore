@@ -1,0 +1,11 @@
+# Entornos virtuales
+.venv/
+backend/.venv/
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Base de datos local (opcional)
+autos_colombia.db
+*.db
