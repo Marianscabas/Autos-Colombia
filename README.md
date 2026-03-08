@@ -6,7 +6,7 @@ El sistema permite gestionar el ingreso y salida de vehículos dentro de un parq
 
 ---
 
-# 📌 Tecnologías utilizadas
+# Tecnologías utilizadas
 
 - **Python 3**
 - **FastAPI**
@@ -19,7 +19,7 @@ Estas tecnologías permiten desarrollar una API REST ligera y fácil de probar m
 
 ---
 
-# ⚙️ Funcionalidades del sistema
+# Funcionalidades del sistema
 
 El sistema permite:
 
@@ -32,6 +32,3 @@ El sistema permite:
 ✅ Calcular tiempo de permanencia  
 ✅ Liberar celda al salir el vehículo  
 
----
-
-# 🏗️ Arquitectura del proyecto
