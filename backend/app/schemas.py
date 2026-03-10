@@ -7,6 +7,7 @@ class CeldaOut(BaseModel):
     id: int
     codigo: str
     estado: str
+    placa: Optional[str] = None  # si la celda está ocupada, muestra la placa del vehículo
 
     class Config:
         from_attributes = True
@@ -23,7 +24,7 @@ class IngresoIn(BaseModel):
 # ---------- SALIDA ----------
 class SalidaIn(BaseModel):
     placa: str
-    operador_id: int
+    # El operador se fija internamente (demo) en el servidor
 
 
 # ---------- MOVIMIENTO (RESPUESTA) ----------
@@ -70,3 +71,10 @@ class NovedadOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ---------- UTILIDADES PARA FRONEND ----------
+class MovimientoResumen(BaseModel):
+    placa: str
+    celda: str
+    hora_ingreso: datetime

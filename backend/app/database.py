@@ -1,7 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-DATABASE_URL = "sqlite:///./autos_colombia.db"
+import os
+
+# Utilice la ruta absoluta para que el directorio de trabajo actual no importe
+db_path = os.path.join(os.path.dirname(__file__), "autos_colombia.db")
+DATABASE_URL = f"sqlite:///{db_path}"
 
 engine = create_engine(
     DATABASE_URL,

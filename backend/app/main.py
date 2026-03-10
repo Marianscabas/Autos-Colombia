@@ -1,11 +1,21 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from .database import Base, engine, get_db
-from . import models, schemas, crud
+from database import Base, engine, get_db
+import models, schemas, crud
 
 app = FastAPI(title="Autos Colombia - Iteración 1")
+
+# configure CORS so that the frontend can communicate with this API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # adjust origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,7 +40,34 @@ def root():
 
 @app.get("/celdas", response_model=list[schemas.CeldaOut])
 def listar_celdas(db: Session = Depends(get_db)):
-    return crud.get_celdas(db)
+    celdas = crud.get_celdas(db)
+    resultado = []
+    for c in celdas:
+        placa = None
+        if c.estado == "OCUPADA":
+            mov = crud.get_movimiento_activo_por_celda(db, c.id)
+            placa = mov.placa if mov else None
+        resultado.append({
+            "id": c.id,
+            "codigo": c.codigo,
+            "estado": c.estado,
+            "placa": placa,
+        })
+    return resultado
+
+# Lista de ingresos activos para la búsqueda frontend
+@app.get("/ingresos", response_model=list[schemas.MovimientoResumen])
+def listar_ingresos(db: Session = Depends(get_db)):
+    movs = crud.get_movimientos_activos(db)
+    resultado = []
+    for m in movs:
+        celda = db.get(models.Celda, m.celda_id)
+        resultado.append({
+            "placa": m.placa,
+            "celda": celda.codigo if celda else None,
+            "hora_ingreso": m.entrada_at,
+        })
+    return resultado
 
 @app.post("/ingresos", response_model=schemas.MovimientoOut)
 def crear_ingreso(payload: schemas.IngresoIn, db: Session = Depends(get_db)):
@@ -48,7 +85,7 @@ def crear_ingreso(payload: schemas.IngresoIn, db: Session = Depends(get_db)):
 @app.post("/salidas", response_model=schemas.MovimientoOut)
 def crear_salida(payload: schemas.SalidaIn, db: Session = Depends(get_db)):
     try:
-        return crud.registrar_salida(db=db, placa=payload.placa, operador_id=payload.operador_id)
+        return crud.registrar_salida(db=db, placa=payload.placa)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime
-from . import models
+import models
 
 def get_celdas(db: Session):
     return db.execute(select(models.Celda)).scalars().all()
@@ -20,6 +20,16 @@ def get_movimiento_activo_por_placa(db: Session, placa: str):
     return db.execute(
         select(models.Movimiento).where(
             models.Movimiento.placa == placa,
+            models.Movimiento.estado == "ACTIVO"
+        )
+    ).scalar_one_or_none()
+
+
+def get_movimiento_activo_por_celda(db: Session, celda_id: int):
+    """Return the active movement occupying a specific celda, or None."""
+    return db.execute(
+        select(models.Movimiento).where(
+            models.Movimiento.celda_id == celda_id,
             models.Movimiento.estado == "ACTIVO"
         )
     ).scalar_one_or_none()
@@ -54,12 +64,11 @@ def registrar_ingreso(db: Session, placa: str, tipo: str, celda_codigo: str, ope
     db.refresh(mov)
     return mov
 
-def registrar_salida(db: Session, placa: str, operador_id: int):
-    operador = get_operador(db, operador_id)
-    if not operador:
-        raise ValueError("Operador no existe")
+def registrar_salida(db: Session, placa: str):
+    # el sistema usa operador demo (id=1) para salir
+    operador_id = 1
 
-    placa = placa.upper()
+    placa = placa.upper().strip()
     mov = get_movimiento_activo_por_placa(db, placa)
     if not mov:
         raise ValueError("No existe un ingreso activo para esta placa")
@@ -72,7 +81,8 @@ def registrar_salida(db: Session, placa: str, operador_id: int):
     mov.permanencia_min = int(delta.total_seconds() // 60)
 
     celda = db.get(models.Celda, mov.celda_id)
-    celda.estado = "DISPONIBLE"
+    if celda:
+        celda.estado = "DISPONIBLE"
 
     db.commit()
     db.refresh(mov)
@@ -136,3 +146,12 @@ def registrar_novedad(db: Session, placa: str, descripcion: str, operador_id: in
     db.commit()
     db.refresh(nov)
     return nov
+
+
+# nuevo helper para listar ingresos activos (para búsqueda rápida en frontend)
+
+def get_movimientos_activos(db: Session):
+    """Devuelve todos los movimientos que todavía están en estado ACTIVO."""
+    return db.execute(
+        select(models.Movimiento).where(models.Movimiento.estado == "ACTIVO")
+    ).scalars().all()
