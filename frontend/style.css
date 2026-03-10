@@ -1,0 +1,157 @@
+/* Configuración General */
+body {
+  background-color: #d1e9f6; /* Fondo azul claro del mockup */
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* Tarjeta Principal */
+.tarjeta {
+  background: white;
+  padding: 30px;
+  border-radius: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: 380px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+h1 {
+  color: #004085;
+  margin: 0;
+  font-size: 24px;
+}
+
+.subtitulo {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+/* Cuadrícula de Botones del Menú */
+.grid-menu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.btn-menu {
+  background: #ffffff;
+  border: 2px solid #f0f0f0;
+  border-radius: 18px;
+  padding: 20px 10px;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-menu:hover {
+  background: #eef7ff;
+  border-color: #007bff;
+  transform: translateY(-3px);
+}
+
+.icono {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.btn-menu b {
+  color: #333;
+  font-size: 14px;
+}
+
+/* Formulario y Controles */
+.oculto {
+  display: none;
+}
+
+.cabecera-form {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.btn-volver {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+h2 {
+  color: #333;
+  font-size: 20px;
+  margin: 10px 0;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1.5px solid #dde;
+  border-radius: 12px;
+  box-sizing: border-box;
+  font-size: 15px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: #007bff;
+}
+
+.btn-confirmar {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 15px;
+  width: 100%;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: 0.2s;
+}
+
+.btn-confirmar:hover {
+  background: #0056b3;
+}
+
+/* Estados de Celdas (Mapa visual) */
+.celda-item {
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: bold;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Alertas y Mensajes */
+.mensaje-alerta {
+  margin-top: 15px;
+  font-weight: bold;
+  font-size: 14px;
+  min-height: 20px;
+}
+
+.vehiculo-info {
+  background: #007bff;
+  padding: 50px;
+  color: white;
+  border-radius: 10px;
+  text-align: left;
+}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autos Colombia - Sistema Integral</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="contenedor-principal">
+
+    <div id="menu-inicio" class="tarjeta">
+      <header>
+        <h1>Autos Colombia</h1>
+        <p class="subtitulo">Control de Parqueadero v1.0</p>
+      </header>
+
+      <div class="grid-menu">
+        <button onclick="abrirSeccion('entrada')" class="btn-menu">
+          <span class="icono">🚗</span>
+          <b>Entrada</b>
+        </button>
+        <button onclick="abrirSeccion('salida')" class="btn-menu">
+          <span class="icono">🏁</span>
+          <b>Salida</b>
+        </button>
+        <button onclick="abrirSeccion('estado')" class="btn-menu">
+          <span class="icono">🅿️</span>
+          <b>Celdas</b>
+        </button>
+        <button onclick="abrirSeccion('buscar')" class="btn-menu">
+          <span class="icono">🔍</span>
+          <b>Buscar</b>
+        </button>
+      </div>
+    </div>
+
+    <div id="vista-formulario" class="tarjeta oculto">
+      <div class="cabecera-form">
+        <button class="btn-volver" onclick="regresar()">⬅ Volver al menú</button>
+        <h2 id="titulo-form">Cargando...</h2>
+      </div>
+
+      <div id="campos" class="cuerpo-formulario"></div>
+
+      <p id="mensaje" class="mensaje-alerta"></p>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
