@@ -8,12 +8,12 @@ El sistema permite gestionar el ingreso y salida de vehículos dentro de un parq
 
 # 🛠 Tecnologías utilizadas
 
-* **Python 3**
-* **FastAPI**
-* **SQLAlchemy**
-* **SQLite**
-* **Uvicorn**
-* **Git & GitHub**
+- **Python 3**
+- **FastAPI**
+- **SQLAlchemy**
+- **SQLite**
+- **Uvicorn**
+- **Git & GitHub**
 
 Estas tecnologías permiten desarrollar una **API REST ligera**, con documentación automática y fácil de probar.
 
@@ -23,13 +23,24 @@ Estas tecnologías permiten desarrollar una **API REST ligera**, con documentaci
 
 El sistema permite:
 
-✅ Registrar ingreso de vehículos
-✅ Validar disponibilidad de celdas
-✅ Consultar vehículos por placa
-✅ Registrar novedades durante la permanencia(proceso)
-✅ Registrar salida del vehículo
-✅ Calcular tiempo de permanencia(proceso)
-✅ Liberar celda cuando el vehículo sale
+✅ Registro de usuarios con datos personales y del vehículo (RFU-01)
+✅ Asignación manual de celdas disponibles a usuarios registrados (RFC-03)
+✅ Liberación manual de celdas ocupadas (RFC-04)
+✅ Validación para evitar doble asignación de usuario o datos incompletos (CP-02)
+✅ Historial de ocupación/liberación por celda (RFC-05)
+✅ Generación de recibo mensual con folio, fecha y concepto fijo
+
+---
+
+# 🔌 Endpoints principales Iteración 2
+
+- `POST /usuarios`
+- `GET /usuarios`
+- `GET /celdas`
+- `POST /celdas/{celda_codigo}/asignar`
+- `POST /celdas/{celda_codigo}/liberar`
+- `GET /celdas/historial`
+- `GET /usuarios/{usuario_id}/recibo-mensual`
 
 ---
 
@@ -82,10 +93,8 @@ http://127.0.0.1:8000
 
 ---
 
-
 # 📚 Proyecto académico
 
 Proyecto desarrollado para la asignatura **Diseño de Sistemas de Información**.
 
 Año **2026**
-

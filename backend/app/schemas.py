@@ -8,9 +8,34 @@ class CeldaOut(BaseModel):
     codigo: str
     estado: str
     placa: Optional[str] = None  # si la celda está ocupada, muestra la placa del vehículo
+    usuario_id: Optional[int] = None
+    usuario_nombre: Optional[str] = None
+    usuario_identificacion: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class AsignarCeldaIn(BaseModel):
+    usuario_id: int
+
+
+class LiberarCeldaOut(BaseModel):
+    celda_codigo: str
+    estado: str
+    usuario_id_liberado: Optional[int] = None
+    liberado_en: datetime
+
+
+class HistorialCeldaOut(BaseModel):
+    id: int
+    celda_codigo: str
+    usuario_id: int
+    usuario_nombre: str
+    usuario_identificacion: str
+    placa: str
+    ocupado_desde: datetime
+    liberado_en: Optional[datetime] = None
 
 
 # ---------- INGRESO ----------
@@ -78,3 +103,51 @@ class MovimientoResumen(BaseModel):
     placa: str
     celda: str
     hora_ingreso: datetime
+
+
+# ---------- USUARIOS (ITERACIÓN 2) ----------
+class UsuarioBase(BaseModel):
+    nombre: str = Field(min_length=2, max_length=120)
+    identificacion: str = Field(min_length=3, max_length=30)
+    telefono: str = Field(min_length=7, max_length=30)
+    placa: str = Field(min_length=5, max_length=10)
+    tipo_vehiculo: str = Field(min_length=3, max_length=30)
+    color_vehiculo: str = Field(min_length=3, max_length=40)
+
+
+class UsuarioCreate(UsuarioBase):
+    pass
+
+
+class UsuarioUpdate(UsuarioBase):
+    pass
+
+
+class UsuarioOut(UsuarioBase):
+    id: int
+    estado_pago: str
+    fecha_ultimo_pago: Optional[datetime] = None
+    fecha_vencimiento: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- RECIBOS ----------
+class PagoManualIn(BaseModel):
+    monto_cobrado: int = Field(gt=0)
+
+
+class ReciboMensualOut(BaseModel):
+    folio: str
+    fecha: datetime
+    concepto: str
+    monto_cobrado: int
+    periodo_cobertura: str
+    fecha_vencimiento: datetime
+    dias_restantes_proximo_pago: int
+    cliente: UsuarioOut
+
+
+class MessageOut(BaseModel):
+    mensaje: str

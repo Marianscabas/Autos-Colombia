@@ -1,49 +1,57 @@
 /* Configuración General */
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background-color: #d1e9f6; /* Fondo azul claro del mockup */
+  background-color: #d1e9f6;
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
   margin: 0;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.contenedor-principal {
+  width: 100%;
+  max-width: 1050px;
+  margin: 0 auto;
 }
 
 /* Tarjeta Principal */
 .tarjeta {
   background: white;
-  padding: 30px;
-  border-radius: 25px;
+  padding: 24px;
+  border-radius: 18px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  width: 380px;
-  text-align: center;
-  transition: all 0.3s ease;
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 h1 {
   color: #004085;
-  margin: 0;
-  font-size: 24px;
+  margin: 0 0 6px 0;
+  font-size: 26px;
 }
 
 .subtitulo {
   color: #6c757d;
   font-size: 14px;
-  margin-bottom: 25px;
+  margin: 0 0 20px 0;
 }
 
 /* Cuadrícula de Botones del Menú */
 .grid-menu {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .btn-menu {
   background: #ffffff;
   border: 2px solid #f0f0f0;
-  border-radius: 18px;
-  padding: 20px 10px;
+  border-radius: 14px;
+  padding: 18px 12px;
   cursor: pointer;
   transition: 0.2s;
   display: flex;
@@ -65,7 +73,7 @@ h1 {
 
 .btn-menu b {
   color: #333;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 /* Formulario y Controles */
@@ -74,9 +82,9 @@ h1 {
 }
 
 .cabecera-form {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
 .btn-volver {
@@ -92,20 +100,55 @@ h1 {
 
 h2 {
   color: #333;
-  font-size: 20px;
-  margin: 10px 0;
+  font-size: 21px;
+  margin: 8px 0 0 0;
+}
+
+.cuerpo-formulario {
+  text-align: left;
+}
+
+.panel-form {
+  background: #f8fbff;
+  border: 1px solid #e7f1ff;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.panel-titulo {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #004085;
+}
+
+.campo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.campo-grid .campo-full {
+  grid-column: span 2;
+}
+
+label {
+  display: block;
+  margin: 4px 0;
+  font-size: 13px;
+  color: #495057;
+  font-weight: 600;
 }
 
 input,
 select {
   width: 100%;
-  padding: 12px;
-  margin: 8px 0;
+  padding: 11px 12px;
+  margin: 0;
   border: 1.5px solid #dde;
-  border-radius: 12px;
-  box-sizing: border-box;
+  border-radius: 10px;
   font-size: 15px;
   outline: none;
+  background: white;
 }
 
 input:focus,
@@ -117,13 +160,13 @@ select:focus {
   background: #007bff;
   color: white;
   border: none;
-  padding: 15px;
+  padding: 13px;
   width: 100%;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: bold;
   cursor: pointer;
-  margin-top: 15px;
+  margin-top: 14px;
   transition: 0.2s;
 }
 
@@ -142,16 +185,218 @@ select:focus {
 
 /* Alertas y Mensajes */
 .mensaje-alerta {
-  margin-top: 15px;
-  font-weight: bold;
+  margin: 0 0 14px 0;
+  font-weight: 600;
   font-size: 14px;
-  min-height: 20px;
+  min-height: 22px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.mensaje-ok {
+  color: #155724;
+  background: #e9f7ef;
+  border: 1px solid #c3e6cb;
+}
+
+.mensaje-error {
+  color: #721c24;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
 }
 
 .vehiculo-info {
-  background: #007bff;
-  padding: 50px;
-  color: white;
-  border-radius: 10px;
+  background: white;
+  border: 1px solid #dbe9ff;
+  padding: 16px;
+  color: #212529;
+  border-radius: 12px;
   text-align: left;
+}
+
+.vehiculo-info p {
+  margin: 8px 0;
+}
+
+.recibo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.recibo-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.recibo-item-full {
+  grid-column: span 2;
+}
+
+.tabla-simple {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: left;
+  font-size: 13px;
+  background: white;
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.fila:last-child {
+  border-bottom: none;
+}
+
+.fila-cabecera {
+  background: #f8fbff;
+  font-weight: 700;
+  color: #00376f;
+}
+
+.btn-mini {
+  border: none;
+  background: #007bff;
+  color: white;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+
+.btn-liberar {
+  background: #dc3545;
+}
+
+.btn-cancelar {
+  background: #6c757d;
+}
+
+.usuarios-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.tabla-usuarios .fila-usuarios {
+  grid-template-columns: 1.5fr 1.1fr 1fr 1fr 1fr 1.3fr;
+}
+
+.acciones-usuario {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 1000;
+}
+
+.modal-contenido {
+  width: 100%;
+  max-width: 620px;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #e7f1ff;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+}
+
+.modal-contenido-sm {
+  max-width: 420px;
+}
+
+.modal-titulo {
+  margin: 0 0 12px 0;
+  color: #0b3d73;
+  font-size: 18px;
+}
+
+.modal-texto {
+  margin: 0 0 14px 0;
+  color: #343a40;
+}
+
+.modal-acciones {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ok {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.error {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+option.usuario-vencido {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 12px;
+  }
+
+  .tarjeta {
+    padding: 16px;
+    max-height: calc(100vh - 24px);
+  }
+
+  .campo-grid,
+  .recibo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo-grid .campo-full,
+  .recibo-item-full {
+    grid-column: span 1;
+  }
+
+  .fila {
+    grid-template-columns:
+      minmax(70px, 90px) minmax(90px, 110px) minmax(240px, 1fr)
+      minmax(110px, 130px);
+    min-width: 620px;
+  }
+
+  .tabla-usuarios .fila-usuarios {
+    min-width: 900px;
+  }
+
+  .usuarios-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-acciones {
+    grid-template-columns: 1fr;
+  }
 }

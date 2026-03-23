@@ -9,7 +9,29 @@ class Celda(Base):
     id = Column(Integer, primary_key=True, index=True)
     codigo = Column(String(10), unique=True, nullable=False, index=True)
     estado = Column(String(20), nullable=False, default="DISPONIBLE")  # DISPONIBLE/OCUPADA/DESHABILITADA
+    usuario_actual_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+
+    usuario_actual = relationship("Usuario", back_populates="celdas_ocupadas")
     movimientos = relationship("Movimiento", back_populates="celda")
+    historial = relationship("HistorialCelda", back_populates="celda")
+
+
+class Usuario(Base):
+    __tablename__ = "usuarios"
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(120), nullable=False)
+    identificacion = Column(String(30), unique=True, nullable=False, index=True)
+    telefono = Column(String(30), nullable=False)
+
+    placa = Column(String(10), unique=True, nullable=False, index=True)
+    tipo_vehiculo = Column(String(30), nullable=False)
+    color_vehiculo = Column(String(40), nullable=False)
+    estado_pago = Column(String(30), nullable=False, default="Al día")
+    fecha_ultimo_pago = Column(DateTime, nullable=True)
+    fecha_vencimiento = Column(DateTime, nullable=True)
+
+    celdas_ocupadas = relationship("Celda", back_populates="usuario_actual")
+    historial_celdas = relationship("HistorialCelda", back_populates="usuario")
 
 class Operador(Base):
     __tablename__ = "operadores"
@@ -45,3 +67,16 @@ class Novedad(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     movimiento = relationship("Movimiento", back_populates="novedades")
+
+
+class HistorialCelda(Base):
+    __tablename__ = "historial_celdas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    celda_id = Column(Integer, ForeignKey("celdas.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    ocupado_desde = Column(DateTime, nullable=False, default=datetime.utcnow)
+    liberado_en = Column(DateTime, nullable=True)
+
+    celda = relationship("Celda", back_populates="historial")
+    usuario = relationship("Usuario", back_populates="historial_celdas")

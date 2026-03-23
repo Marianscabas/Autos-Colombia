@@ -15,38 +15,38 @@
     <div id="menu-inicio" class="tarjeta">
       <header>
         <h1>Autos Colombia</h1>
-        <p class="subtitulo">Control de Parqueadero v1.0</p>
+        <p class="subtitulo">Control de Parqueadero v2.0 (Manual)</p>
       </header>
 
       <div class="grid-menu">
-        <button onclick="abrirSeccion('entrada')" class="btn-menu">
-          <span class="icono">🚗</span>
-          <b>Entrada</b>
+        <button type="button" class="btn-menu" data-seccion="usuarios">
+          <span class="icono">👤</span>
+          <b>Usuarios</b>
         </button>
-        <button onclick="abrirSeccion('salida')" class="btn-menu">
-          <span class="icono">🏁</span>
-          <b>Salida</b>
-        </button>
-        <button onclick="abrirSeccion('estado')" class="btn-menu">
+        <button type="button" class="btn-menu" data-seccion="celdas">
           <span class="icono">🅿️</span>
           <b>Celdas</b>
         </button>
-        <button onclick="abrirSeccion('buscar')" class="btn-menu">
-          <span class="icono">🔍</span>
-          <b>Buscar</b>
+        <button type="button" class="btn-menu" data-seccion="historial">
+          <span class="icono">📜</span>
+          <b>Historial</b>
+        </button>
+        <button type="button" class="btn-menu" data-seccion="recibo">
+          <span class="icono">🧾</span>
+          <b>Recibo</b>
         </button>
       </div>
     </div>
 
     <div id="vista-formulario" class="tarjeta oculto">
       <div class="cabecera-form">
-        <button class="btn-volver" onclick="regresar()">⬅ Volver al menú</button>
+        <button type="button" id="btn-volver" class="btn-volver">⬅ Volver al menú</button>
         <h2 id="titulo-form">Cargando...</h2>
       </div>
 
-      <div id="campos" class="cuerpo-formulario"></div>
-
       <p id="mensaje" class="mensaje-alerta"></p>
+
+      <div id="campos" class="cuerpo-formulario"></div>
     </div>
 
   </div>
