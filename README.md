@@ -1,100 +1,57 @@
-# 🚗 Autos-Colombia
+# Autos Colombia
 
-Sistema de gestión de parqueadero para la empresa **Autos Colombia**, desarrollado como proyecto académico para la asignatura **Diseño de Sistemas de Información**.
+Aplicación web de gestión de parqueadero con frontend en JavaScript vanilla y backend en FastAPI.
 
-El sistema permite gestionar el ingreso y salida de vehículos dentro de un parqueadero, registrar novedades y controlar la disponibilidad de celdas.
+## Funcionalidad principal
 
----
+- Registro, edición y eliminación de usuarios.
+- Asignación y liberación manual de celdas.
+- Historial de ocupación/liberación de celdas.
+- Registro de pago mensual y generación de recibo.
+- Endpoints auxiliares para ingresos, salidas, consulta de vehículos y novedades.
 
-# 🛠 Tecnologías utilizadas
+## Stack
 
-- **Python 3**
-- **FastAPI**
-- **SQLAlchemy**
-- **SQLite**
-- **Uvicorn**
-- **Git & GitHub**
+- Python 3.10+
+- FastAPI
+- SQLAlchemy (SQLite)
+- JavaScript, HTML y CSS
 
-Estas tecnologías permiten desarrollar una **API REST ligera**, con documentación automática y fácil de probar.
+## Estructura
 
----
+- `backend/app`: API, lógica de negocio y base de datos SQLite.
+- `frontend`: interfaz de usuario (archivo estático).
 
-# ⚙️ Funcionalidades del sistema
+## Ejecutar backend
 
-El sistema permite:
-
-✅ Registro de usuarios con datos personales y del vehículo (RFU-01)
-✅ Asignación manual de celdas disponibles a usuarios registrados (RFC-03)
-✅ Liberación manual de celdas ocupadas (RFC-04)
-✅ Validación para evitar doble asignación de usuario o datos incompletos (CP-02)
-✅ Historial de ocupación/liberación por celda (RFC-05)
-✅ Generación de recibo mensual con folio, fecha y concepto fijo
-
----
-
-# 🔌 Endpoints principales Iteración 2
-
-- `POST /usuarios`
-- `GET /usuarios`
-- `GET /celdas`
-- `POST /celdas/{celda_codigo}/asignar`
-- `POST /celdas/{celda_codigo}/liberar`
-- `GET /celdas/historial`
-- `GET /usuarios/{usuario_id}/recibo-mensual`
-
----
-
-# 🚀 Instalación y ejecución del proyecto
-
-## 1. Clonar el repositorio
-
-Primero debes clonar el repositorio desde GitHub.
+1. Crear entorno virtual (opcional pero recomendado).
+2. Instalar dependencias:
 
 ```bash
-git clone https://github.com/TU_USUARIO/Autos-Colombia.git
-cd Autos-Colombia
+pip install -r backend/requirements.txt
 ```
 
----
-
-## 2. Instalar dependencias necesarias
-
-Es necesario instalar las librerías que utiliza el backend.
-
-```bash
-pip install fastapi uvicorn sqlalchemy
-```
-
----
-
-## 4. Encender el servidor
-
-permitir la comunicación entre el **frontend** y el **backend**
-
-⚠️ **IMPORTANTE:**
-La terminal debe estar ubicada dentro de la carpeta:
-
-```
-backend/app
-```
-
-Luego ejecutar el siguiente comando:
+3. Levantar API:
 
 ```bash
 cd backend/app
 python -m uvicorn main:app --reload
 ```
 
-Si todo funciona correctamente, el servidor se ejecutará en:
+La API queda en `http://127.0.0.1:8000`.
 
-```
-http://127.0.0.1:8000
-```
+## Ejecutar frontend
 
----
+Abre `frontend/index.html` con tu servidor estático favorito (por ejemplo Five Server en VS Code).
 
-# 📚 Proyecto académico
+## Endpoints clave
 
-Proyecto desarrollado para la asignatura **Diseño de Sistemas de Información**.
-
-Año **2026**
+- `GET /usuarios`
+- `POST /usuarios`
+- `PUT /usuarios/{usuario_id}`
+- `DELETE /usuarios/{usuario_id}`
+- `GET /celdas`
+- `POST /celdas/{celda_codigo}/asignar`
+- `POST /celdas/{celda_codigo}/liberar`
+- `GET /celdas/historial`
+- `POST /usuarios/{usuario_id}/pagos/manual`

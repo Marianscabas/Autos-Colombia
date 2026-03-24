@@ -1,19 +1,20 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
 
-# ---------- CELDAS ----------
-class CeldaOut(BaseModel):
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class OrmModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CeldaOut(OrmModel):
     id: int
     codigo: str
     estado: str
-    placa: Optional[str] = None  # si la celda está ocupada, muestra la placa del vehículo
-    usuario_id: Optional[int] = None
-    usuario_nombre: Optional[str] = None
-    usuario_identificacion: Optional[str] = None
-
-    class Config:
-        from_attributes = True
+    placa: str | None = None
+    usuario_id: int | None = None
+    usuario_nombre: str | None = None
+    usuario_identificacion: str | None = None
 
 
 class AsignarCeldaIn(BaseModel):
@@ -23,7 +24,7 @@ class AsignarCeldaIn(BaseModel):
 class LiberarCeldaOut(BaseModel):
     celda_codigo: str
     estado: str
-    usuario_id_liberado: Optional[int] = None
+    usuario_id_liberado: int | None = None
     liberado_en: datetime
 
 
@@ -35,10 +36,9 @@ class HistorialCeldaOut(BaseModel):
     usuario_identificacion: str
     placa: str
     ocupado_desde: datetime
-    liberado_en: Optional[datetime] = None
+    liberado_en: datetime | None = None
 
 
-# ---------- INGRESO ----------
 class IngresoIn(BaseModel):
     placa: str = Field(min_length=5, max_length=10)
     tipo_vehiculo: str
@@ -46,66 +46,53 @@ class IngresoIn(BaseModel):
     operador_id: int
 
 
-# ---------- SALIDA ----------
 class SalidaIn(BaseModel):
     placa: str
-    # El operador se fija internamente (demo) en el servidor
 
 
-# ---------- MOVIMIENTO (RESPUESTA) ----------
-class MovimientoOut(BaseModel):
+class MovimientoOut(OrmModel):
     id: int
     placa: str
     tipo_vehiculo: str
     celda_id: int
     operador_entrada_id: int
     entrada_at: datetime
-    operador_salida_id: Optional[int] = None
-    salida_at: Optional[datetime] = None
-    permanencia_min: Optional[int] = None
+    operador_salida_id: int | None = None
+    salida_at: datetime | None = None
+    permanencia_min: int | None = None
     estado: str
 
-    class Config:
-        from_attributes = True
 
-
-# ---------- CONSULTA ----------
 class VehiculoEstadoOut(BaseModel):
     placa: str
-    estado: str  # DENTRO / FUERA / NO_REGISTRADO
-    celda_codigo: Optional[str] = None
-    entrada_at: Optional[datetime] = None
-    salida_at: Optional[datetime] = None
-    permanencia_min: Optional[int] = None
-    movimiento_id: Optional[int] = None
+    estado: str
+    celda_codigo: str | None = None
+    entrada_at: datetime | None = None
+    salida_at: datetime | None = None
+    permanencia_min: int | None = None
+    movimiento_id: int | None = None
 
 
-# ---------- NOVEDADES ----------
 class NovedadIn(BaseModel):
     placa: str
     descripcion: str
     operador_id: int
 
 
-class NovedadOut(BaseModel):
+class NovedadOut(OrmModel):
     id: int
     movimiento_id: int
     descripcion: str
     operador_id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
 
-
-# ---------- UTILIDADES PARA FRONEND ----------
 class MovimientoResumen(BaseModel):
     placa: str
-    celda: str
+    celda: str | None
     hora_ingreso: datetime
 
 
-# ---------- USUARIOS (ITERACIÓN 2) ----------
 class UsuarioBase(BaseModel):
     nombre: str = Field(min_length=2, max_length=120)
     identificacion: str = Field(min_length=3, max_length=30)
@@ -123,17 +110,13 @@ class UsuarioUpdate(UsuarioBase):
     pass
 
 
-class UsuarioOut(UsuarioBase):
+class UsuarioOut(UsuarioBase, OrmModel):
     id: int
     estado_pago: str
-    fecha_ultimo_pago: Optional[datetime] = None
-    fecha_vencimiento: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+    fecha_ultimo_pago: datetime | None = None
+    fecha_vencimiento: datetime | None = None
 
 
-# ---------- RECIBOS ----------
 class PagoManualIn(BaseModel):
     monto_cobrado: int = Field(gt=0)
 

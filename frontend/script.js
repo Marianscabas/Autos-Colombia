@@ -2,130 +2,177 @@ const API_URL = "http://127.0.0.1:8000";
 const REQUEST_TIMEOUT_MS = 8000;
 const MESSAGE_TIMEOUT_MS = 60000;
 
-const appState = {
-  seccionActual: "",
-  mensaje: { texto: "", exito: true },
+const state = {
+  seccionActiva: "",
+  mensaje: { texto: "", ok: true },
   mensajeTimer: null,
-  crudUsuarioEnProceso: false,
-  usuariosCache: [],
+  usuarios: [],
+  guardandoUsuario: false,
+  modalAbierto: false,
+  ultimoRecibo: null,
 };
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 
 function cancelarEvento(event) {
-  if (!event) {
-    return;
-  }
+  if (!event) return;
   event.preventDefault?.();
   event.stopPropagation?.();
 }
 
-function asegurarVistaFormulario() {
-  if (!appState.seccionActual) {
-    return;
-  }
-  $("#menu-inicio")?.classList.add("oculto");
-  $("#vista-formulario")?.classList.remove("oculto");
-}
-
 function limpiarMensaje() {
-  if (appState.mensajeTimer) {
-    clearTimeout(appState.mensajeTimer);
-    appState.mensajeTimer = null;
+  if (state.mensajeTimer) {
+    clearTimeout(state.mensajeTimer);
+    state.mensajeTimer = null;
   }
 
-  appState.mensaje = { texto: "", exito: true };
-  const mensaje = $("#mensaje");
-  if (!mensaje) {
-    return;
-  }
-
-  mensaje.innerHTML = "";
-  mensaje.classList.remove("mensaje-ok", "mensaje-error");
+  state.mensaje = { texto: "", ok: true };
+  const box = $("#mensaje");
+  if (!box) return;
+  box.classList.remove("mensaje-ok", "mensaje-error");
+  box.textContent = "";
 }
 
-function mostrarMensaje(texto, exito) {
-  const mensaje = $("#mensaje");
-  if (!mensaje) {
-    return;
+function mostrarMensaje(texto, ok) {
+  const box = $("#mensaje");
+  if (!box) return;
+
+  if (state.mensajeTimer) {
+    clearTimeout(state.mensajeTimer);
+    state.mensajeTimer = null;
   }
 
-  asegurarVistaFormulario();
-  if (appState.mensajeTimer) {
-    clearTimeout(appState.mensajeTimer);
-    appState.mensajeTimer = null;
-  }
+  state.mensaje = { texto, ok };
+  box.textContent = texto;
+  box.classList.toggle("mensaje-ok", Boolean(ok));
+  box.classList.toggle("mensaje-error", !ok);
 
-  appState.mensaje = { texto, exito };
-  mensaje.innerHTML = texto;
-  mensaje.classList.toggle("mensaje-ok", Boolean(exito));
-  mensaje.classList.toggle("mensaje-error", !exito);
-
-  appState.mensajeTimer = setTimeout(() => {
-    limpiarMensaje();
-  }, MESSAGE_TIMEOUT_MS);
+  state.mensajeTimer = setTimeout(limpiarMensaje, MESSAGE_TIMEOUT_MS);
 }
 
 function restaurarMensaje() {
-  if (!appState.mensaje.texto) {
-    return;
-  }
-  mostrarMensaje(appState.mensaje.texto, appState.mensaje.exito);
+  if (!state.mensaje.texto) return;
+  mostrarMensaje(state.mensaje.texto, state.mensaje.ok);
 }
 
-async function mostrarAlertaConfirmacion(texto) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "modal-overlay";
+function bloquearSubmitGlobal(event) {
+  cancelarEvento(event);
+}
 
-    overlay.innerHTML = `
-      <div class="modal-contenido modal-contenido-sm">
-        <h3 class="modal-titulo">Confirmación</h3>
-        <p class="modal-texto">${texto}</p>
-        <div class="modal-acciones" style="grid-template-columns: 1fr;">
-          <button type="button" class="btn-confirmar" data-close-modal="true">Aceptar</button>
+function htmlUsuariosRows(usuarios) {
+  return usuarios
+    .map(
+      (usuario) => `
+        <div class="fila fila-usuarios">
+          <div>${usuario.nombre}</div>
+          <div>${usuario.identificacion}</div>
+          <div>${usuario.telefono}</div>
+          <div>${usuario.placa}</div>
+          <div class="${usuario.estado_pago === "Pendiente/Vencido" ? "error" : "ok"}">${usuario.estado_pago}</div>
+          <div class="acciones-usuario">
+            <button type="button" class="btn-mini" data-action="editar-usuario" data-usuario-id="${usuario.id}">Editar</button>
+            <button type="button" class="btn-mini btn-liberar" data-action="eliminar-usuario" data-usuario-id="${usuario.id}">Eliminar</button>
+          </div>
         </div>
-      </div>
-    `;
+      `,
+    )
+    .join("");
+}
 
-    document.body.appendChild(overlay);
-    const botonAceptar = $("button[data-close-modal='true']", overlay);
+function htmlOpcionesUsuarios(usuarios) {
+  return usuarios
+    .map((usuario) => {
+      const vencido = usuario.estado_pago === "Pendiente/Vencido";
+      const estado = vencido ? "🔴 VENCIDO" : "🟢 AL DÍA";
+      return `<option class="${vencido ? "usuario-vencido" : ""}" value="${usuario.id}" data-estado-pago="${usuario.estado_pago}">${estado} | ${usuario.nombre} - ${usuario.identificacion} - ${usuario.placa}</option>`;
+    })
+    .join("");
+}
 
-    const cerrar = () => {
-      document.removeEventListener("keydown", onKeydown);
-      overlay.remove();
-      resolve();
-    };
-
-    const onKeydown = (event) => {
-      if (event.key === "Enter" || event.key === "Escape") {
-        cancelarEvento(event);
-        cerrar();
+function htmlCeldasRows(celdas, opcionesUsuarios) {
+  return celdas
+    .map((celda) => {
+      if (celda.estado === "DISPONIBLE") {
+        return `
+          <div class="fila">
+            <div>${celda.codigo}</div>
+            <div class="ok">DISPONIBLE</div>
+            <div>
+              <select id="usuario_celda_${celda.codigo}">
+                <option value="">Seleccione usuario...</option>
+                ${opcionesUsuarios}
+              </select>
+            </div>
+            <div>
+              <button type="button" class="btn-mini" data-action="asignar-celda" data-celda="${celda.codigo}">Asignar</button>
+            </div>
+          </div>
+        `;
       }
-    };
 
-    document.addEventListener("keydown", onKeydown);
-    botonAceptar?.focus();
-    botonAceptar?.addEventListener("click", (event) => {
-      cancelarEvento(event);
-      event.stopImmediatePropagation?.();
-      cerrar();
-    });
-  });
+      return `
+        <div class="fila">
+          <div>${celda.codigo}</div>
+          <div class="error">OCUPADA</div>
+          <div>${celda.usuario_nombre || "Sin vínculo"} ${celda.placa ? `(${celda.placa})` : ""}</div>
+          <div>
+            <button type="button" class="btn-mini btn-liberar" data-action="liberar-celda" data-celda="${celda.codigo}">Liberar Celda</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function htmlHistorialRows(historial) {
+  return historial
+    .map(
+      (item) => `
+        <div class="fila">
+          <div>${item.celda_codigo}</div>
+          <div>${item.usuario_nombre}</div>
+          <div>${item.placa}</div>
+          <div>${new Date(item.ocupado_desde).toLocaleString()}</div>
+          <div>${item.liberado_en ? new Date(item.liberado_en).toLocaleString() : "ACTIVA"}</div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function htmlRecibo(data) {
+  return `
+    <div class="vehiculo-info">
+      <div class="recibo-grid">
+        <div class="recibo-item"><b>Folio:</b> ${data.folio}</div>
+        <div class="recibo-item"><b>Fecha:</b> ${new Date(data.fecha).toLocaleString()}</div>
+        <div class="recibo-item recibo-item-full"><b>Cliente:</b> ${data.cliente.nombre} - ${data.cliente.identificacion}</div>
+        <div class="recibo-item"><b>Teléfono:</b> ${data.cliente.telefono}</div>
+        <div class="recibo-item"><b>Placa:</b> ${data.cliente.placa}</div>
+        <div class="recibo-item recibo-item-full"><b>Vehículo:</b> ${data.cliente.tipo_vehiculo} ${data.cliente.color_vehiculo}</div>
+        <div class="recibo-item"><b>Concepto:</b> ${data.concepto}</div>
+        <div class="recibo-item"><b>Monto:</b> $${data.monto_cobrado}</div>
+        <div class="recibo-item recibo-item-full"><b>Periodo:</b> ${data.periodo_cobertura}</div>
+        <div class="recibo-item"><b>Días restantes:</b> ${data.dias_restantes_proximo_pago}</div>
+        <div class="recibo-item"><b>Vence:</b> ${new Date(data.fecha_vencimiento).toLocaleDateString()}</div>
+        <div class="recibo-item recibo-item-full"><b>Estado:</b> ${data.cliente.estado_pago}</div>
+      </div>
+    </div>
+  `;
 }
 
 async function apiRequest(endpoint, { method = "GET", body = null } = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const config = { method, signal: controller.signal, headers: {} };
+    const options = { method, signal: controller.signal, headers: {} };
     if (body !== null) {
-      config.headers["Content-Type"] = "application/json";
-      config.body = JSON.stringify(body);
+      options.headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(body);
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, config);
+    const response = await fetch(`${API_URL}${endpoint}`, options);
     const raw = await response.text();
 
     let data = {};
@@ -155,15 +202,13 @@ async function apiRequest(endpoint, { method = "GET", body = null } = {}) {
       data: { detail: "Error de conexión con backend" },
     };
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
   }
 }
 
 async function obtenerLista(endpoint) {
   const respuesta = await apiRequest(endpoint);
-  if (!respuesta.ok) {
-    return [];
-  }
+  if (!respuesta.ok) return [];
   return Array.isArray(respuesta.data) ? respuesta.data : [];
 }
 
@@ -171,113 +216,82 @@ const obtenerUsuarios = () => obtenerLista("/usuarios");
 const obtenerCeldas = () => obtenerLista("/celdas");
 const obtenerHistorial = () => obtenerLista("/celdas/historial");
 
-function setCrudUsuarioEnProceso(enProceso, textoBoton = "Procesando...") {
-  appState.crudUsuarioEnProceso = enProceso;
+function leerPayloadUsuario() {
+  return {
+    nombre: $("#u_nombre")?.value.trim() || "",
+    identificacion: $("#u_identificacion")?.value.trim() || "",
+    telefono: $("#u_telefono")?.value.trim() || "",
+    placa: $("#u_placa")?.value.trim().toUpperCase() || "",
+    tipo_vehiculo: $("#u_tipo")?.value || "",
+    color_vehiculo: $("#u_color")?.value.trim() || "",
+  };
+}
 
+function setGuardandoUsuario(enProceso, texto = "Procesando...") {
+  state.guardandoUsuario = enProceso;
   const botones = document.querySelectorAll(
     'button[data-action="guardar-usuario"], button[data-action="editar-usuario"], button[data-action="eliminar-usuario"]',
   );
 
-  botones.forEach((boton) => {
+  botones.forEach((btn) => {
     if (enProceso) {
-      boton.dataset.textoOriginal = boton.textContent;
-      boton.textContent = textoBoton;
-      boton.disabled = true;
-      boton.style.opacity = "0.7";
+      btn.dataset.textoOriginal = btn.textContent;
+      btn.textContent = texto;
+      btn.disabled = true;
+      btn.style.opacity = "0.7";
       return;
     }
-
-    boton.textContent = boton.dataset.textoOriginal || boton.textContent;
-    boton.disabled = false;
-    boton.style.opacity = "1";
-    delete boton.dataset.textoOriginal;
+    btn.textContent = btn.dataset.textoOriginal || btn.textContent;
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    delete btn.dataset.textoOriginal;
   });
 }
 
-function htmlUsuariosRows(usuarios) {
-  return usuarios
-    .map(
-      (usuario) => `
-        <div class="fila fila-usuarios">
-          <div>${usuario.nombre}</div>
-          <div>${usuario.identificacion}</div>
-          <div>${usuario.telefono}</div>
-          <div>${usuario.placa}</div>
-          <div class="${usuario.estado_pago === "Pendiente/Vencido" ? "error" : "ok"}">${usuario.estado_pago}</div>
-          <div class="acciones-usuario">
-            <button type="button" class="btn-mini" data-action="editar-usuario" data-usuario-id="${usuario.id}">Editar</button>
-            <button type="button" class="btn-mini btn-liberar" data-action="eliminar-usuario" data-usuario-id="${usuario.id}">Eliminar</button>
-          </div>
-        </div>
-      `,
-    )
-    .join("");
-}
+async function mostrarAlertaConfirmacion(texto) {
+  return new Promise((resolve) => {
+    state.modalAbierto = true;
 
-function htmlCeldasRows(celdas, opcionesUsuarios) {
-  return celdas
-    .map((celda) => {
-      if (celda.estado === "DISPONIBLE") {
-        return `
-          <div class="fila">
-            <div>${celda.codigo}</div>
-            <div class="ok">DISPONIBLE</div>
-            <div>
-              <select id="usuario_celda_${celda.codigo}">
-                <option value="">Seleccione usuario...</option>
-                ${opcionesUsuarios}
-              </select>
-            </div>
-            <div><button type="button" class="btn-mini" data-action="asignar-celda" data-celda="${celda.codigo}">Asignar</button></div>
-          </div>
-        `;
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+      <div class="modal-contenido">
+        <h3 class="modal-titulo">Confirmación</h3>
+        <p class="modal-texto">${texto}</p>
+        <button type="button" class="btn-confirmar" data-close-modal="true">Aceptar</button>
+      </div>
+    `;
+
+    const cerrar = () => {
+      state.modalAbierto = false;
+      document.removeEventListener("keydown", onKeydown);
+      overlay.remove();
+      resolve();
+    };
+
+    const onKeydown = (event) => {
+      if (event.key === "Enter" || event.key === "Escape") {
+        cancelarEvento(event);
+        cerrar();
       }
+    };
 
-      return `
-        <div class="fila">
-          <div>${celda.codigo}</div>
-          <div class="error">OCUPADA</div>
-          <div>${celda.usuario_nombre || "Sin vínculo"} ${celda.placa ? `(${celda.placa})` : ""}</div>
-          <div><button type="button" class="btn-mini btn-liberar" data-action="liberar-celda" data-celda="${celda.codigo}">Liberar Celda</button></div>
-        </div>
-      `;
-    })
-    .join("");
+    document.body.appendChild(overlay);
+    document.addEventListener("keydown", onKeydown);
+
+    const aceptar = $("button[data-close-modal='true']", overlay);
+    aceptar?.focus();
+    aceptar?.addEventListener("click", (event) => {
+      cancelarEvento(event);
+      cerrar();
+    });
+  });
 }
 
-function htmlHistorialRows(historial) {
-  return historial
-    .map(
-      (item) => `
-        <div class="fila">
-          <div>${item.celda_codigo}</div>
-          <div>${item.usuario_nombre}</div>
-          <div>${item.placa}</div>
-          <div>${new Date(item.ocupado_desde).toLocaleString()}</div>
-          <div>${item.liberado_en ? new Date(item.liberado_en).toLocaleString() : "ACTIVA"}</div>
-        </div>
-      `,
-    )
-    .join("");
-}
-
-function htmlOpcionesUsuarios(usuarios) {
-  return usuarios
-    .map((u) => {
-      const vencido = u.estado_pago === "Pendiente/Vencido";
-      const estado = vencido ? "🔴 VENCIDO" : "🟢 AL DÍA";
-      const clase = vencido ? "usuario-vencido" : "";
-      return `<option class="${clase}" value="${u.id}" data-estado-pago="${u.estado_pago}">${estado} | ${u.nombre} - ${u.identificacion} - ${u.placa}</option>`;
-    })
-    .join("");
-}
-
-async function renderFormularioUsuario() {
-  appState.usuariosCache = await obtenerUsuarios();
+async function renderUsuarios() {
+  state.usuarios = await obtenerUsuarios();
   const campos = $("#campos");
-  if (!campos) {
-    return;
-  }
+  if (!campos) return;
 
   campos.innerHTML = `
     <form id="form-usuario" class="panel-form" novalidate>
@@ -285,22 +299,22 @@ async function renderFormularioUsuario() {
       <div class="campo-grid">
         <div class="campo-full">
           <label>Nombre</label>
-          <input type="text" id="u_nombre" placeholder="Nombre completo" required>
+          <input type="text" id="u_nombre" placeholder="Nombre completo" required />
         </div>
 
         <div>
           <label>ID / Identificación</label>
-          <input type="text" id="u_identificacion" placeholder="Cédula o documento" required>
+          <input type="text" id="u_identificacion" placeholder="Cédula o documento" required />
         </div>
 
         <div>
           <label>Teléfono</label>
-          <input type="text" id="u_telefono" placeholder="3001234567" required>
+          <input type="text" id="u_telefono" placeholder="3001234567" required />
         </div>
 
         <div>
           <label>Placa</label>
-          <input type="text" id="u_placa" placeholder="ABC123" style="text-transform:uppercase" required>
+          <input type="text" id="u_placa" placeholder="ABC123" style="text-transform:uppercase" required />
         </div>
 
         <div>
@@ -313,56 +327,54 @@ async function renderFormularioUsuario() {
 
         <div class="campo-full">
           <label>Color</label>
-          <input type="text" id="u_color" placeholder="Blanco" required>
+          <input type="text" id="u_color" placeholder="Blanco" required />
         </div>
       </div>
 
-      <button type="submit" class="btn-confirmar" data-action="guardar-usuario">Guardar Usuario</button>
+      <button type="button" class="btn-confirmar" data-action="guardar-usuario">Guardar Usuario</button>
     </form>
 
-    <div class="panel-form" style="margin-top: 14px;">
-      <div class="usuarios-toolbar">
-        <h3 class="panel-titulo" style="margin: 0;">Usuarios registrados</h3>
-      </div>
-
-      <div style="margin-top: 12px;">
-        <div class="tabla-scroll">
-          <div class="tabla-simple tabla-usuarios">
-            <div class="fila fila-cabecera fila-usuarios">
-              <div>Nombre</div>
-              <div>ID</div>
-              <div>Teléfono</div>
-              <div>Placa</div>
-              <div>Estado</div>
-              <div>Acciones</div>
-            </div>
-            ${htmlUsuariosRows(appState.usuariosCache)}
+    <div class="panel-form" style="margin-top:14px;">
+      <h3 class="panel-titulo" style="margin:0 0 10px 0;">Usuarios registrados</h3>
+      <div class="tabla-scroll">
+        <div class="tabla-simple tabla-usuarios">
+          <div class="fila fila-cabecera fila-usuarios">
+            <div>Nombre</div>
+            <div>ID</div>
+            <div>Teléfono</div>
+            <div>Placa</div>
+            <div>Estado</div>
+            <div>Acciones</div>
           </div>
+          ${htmlUsuariosRows(state.usuarios)}
         </div>
       </div>
     </div>
   `;
+
+  restaurarMensaje();
 }
 
-async function renderModuloCeldas() {
+async function renderCeldas() {
   const campos = $("#campos");
-  if (!campos) {
-    return;
-  }
+  if (!campos) return;
 
   campos.innerHTML = "<p>Cargando celdas y usuarios...</p>";
+
   const [celdas, usuarios] = await Promise.all([
     obtenerCeldas(),
     obtenerUsuarios(),
   ]);
-
   campos.innerHTML = `
     <div class="panel-form">
       <h3 class="panel-titulo">Asignación y liberación manual de celdas</h3>
       <div class="tabla-scroll">
         <div class="tabla-simple">
           <div class="fila fila-cabecera">
-            <div>Celda</div><div>Estado</div><div>Asignación Manual</div><div>Acción</div>
+            <div>Celda</div>
+            <div>Estado</div>
+            <div>Asignación Manual</div>
+            <div>Acción</div>
           </div>
           ${htmlCeldasRows(celdas, htmlOpcionesUsuarios(usuarios))}
         </div>
@@ -375,9 +387,7 @@ async function renderModuloCeldas() {
 
 async function renderHistorial() {
   const campos = $("#campos");
-  if (!campos) {
-    return;
-  }
+  if (!campos) return;
 
   campos.innerHTML = "<p>Cargando historial...</p>";
   const historial = await obtenerHistorial();
@@ -393,72 +403,117 @@ async function renderHistorial() {
       <div class="tabla-scroll">
         <div class="tabla-simple">
           <div class="fila fila-cabecera">
-            <div>Celda</div><div>Usuario</div><div>Placa</div><div>Ocupó</div><div>Liberó</div>
+            <div>Celda</div>
+            <div>Usuario</div>
+            <div>Placa</div>
+            <div>Ocupó</div>
+            <div>Liberó</div>
           </div>
           ${htmlHistorialRows(historial)}
         </div>
       </div>
     </div>
   `;
+
+  restaurarMensaje();
 }
 
 async function renderRecibo() {
   const campos = $("#campos");
-  if (!campos) {
-    return;
-  }
+  if (!campos) return;
 
   const usuarios = await obtenerUsuarios();
-
   campos.innerHTML = `
-    <form id="form-recibo" class="panel-form" novalidate>
+    <div id="form-recibo" class="panel-form">
       <h3 class="panel-titulo">Registro de pago mensual</h3>
       <div class="campo-grid">
         <div class="campo-full">
           <label>Seleccionar Usuario</label>
           <select id="usuario_recibo" required>
             <option value="">Seleccione...</option>
-            ${usuarios.map((u) => `<option value="${u.id}">${u.nombre} - ${u.identificacion} (${u.estado_pago})</option>`).join("")}
+            ${usuarios
+              .map(
+                (u) =>
+                  `<option value="${u.id}">${u.nombre} - ${u.identificacion} (${u.estado_pago})</option>`,
+              )
+              .join("")}
           </select>
         </div>
 
         <div class="campo-full">
           <label>Monto cobrado</label>
-          <input type="number" id="monto_cobrado" placeholder="Ej: 120000" min="1" step="1" required>
+          <input type="number" id="monto_cobrado" placeholder="Ej: 120000" min="1" step="1" required />
         </div>
       </div>
 
-      <button type="submit" class="btn-confirmar" data-action="registrar-pago">Registrar Pago y Generar Recibo</button>
+      <button type="button" class="btn-confirmar" data-action="registrar-pago">Registrar Pago y Generar Recibo</button>
       <div id="resultado_recibo" style="margin-top:14px;"></div>
-    </form>
+    </div>
   `;
+
+  if (state.ultimoRecibo) {
+    const resultadoRecibo = $("#resultado_recibo");
+    if (resultadoRecibo) {
+      resultadoRecibo.innerHTML = htmlRecibo(state.ultimoRecibo);
+    }
+  }
 
   restaurarMensaje();
 }
 
-function leerPayloadUsuario() {
-  return {
-    nombre: $("#u_nombre")?.value.trim() || "",
-    identificacion: $("#u_identificacion")?.value.trim() || "",
-    telefono: $("#u_telefono")?.value.trim() || "",
-    placa: $("#u_placa")?.value.trim().toUpperCase() || "",
-    tipo_vehiculo: $("#u_tipo")?.value || "",
-    color_vehiculo: $("#u_color")?.value.trim() || "",
-  };
+async function abrirSeccion(seccion) {
+  const config = {
+    usuarios: {
+      titulo: "Registro de Usuario (RFU-01)",
+      render: renderUsuarios,
+    },
+    celdas: {
+      titulo: "Asignación/Liberación Manual (RFC-03 / RFC-04)",
+      render: renderCeldas,
+    },
+    historial: {
+      titulo: "Historial de Celdas (RFC-05)",
+      render: renderHistorial,
+    },
+    recibo: { titulo: "Generación de Recibo Mensual", render: renderRecibo },
+  }[seccion];
+
+  if (!config) return;
+
+  state.seccionActiva = seccion;
+  sessionStorage.setItem("seccionActiva", seccion);
+
+  $("#menu-inicio")?.classList.add("oculto");
+  $("#vista-formulario")?.classList.remove("oculto");
+  const titulo = $("#titulo-form");
+  if (titulo) titulo.textContent = config.titulo;
+
+  limpiarMensaje();
+  const campos = $("#campos");
+  if (campos) campos.innerHTML = "";
+
+  await config.render();
 }
 
-async function registrarUsuario() {
-  if (appState.crudUsuarioEnProceso) {
-    return;
-  }
+function regresarMenu() {
+  $("#menu-inicio")?.classList.remove("oculto");
+  $("#vista-formulario")?.classList.add("oculto");
+  state.seccionActiva = "";
+  sessionStorage.removeItem("seccionActiva");
+  limpiarMensaje();
+}
+
+async function registrarUsuario(event) {
+  cancelarEvento(event);
+  if (state.guardandoUsuario) return;
 
   const payload = leerPayloadUsuario();
-  if (Object.values(payload).some((v) => !v)) {
+  if (Object.values(payload).some((value) => !value)) {
     mostrarMensaje("❌ Completa todos los campos del usuario", false);
     return;
   }
 
-  setCrudUsuarioEnProceso(true, "Guardando...");
+  setGuardandoUsuario(true, "Guardando...");
   mostrarMensaje("⏳ Registrando usuario...", true);
 
   try {
@@ -476,18 +531,17 @@ async function registrarUsuario() {
 
     const texto = `✅ Usuario ${respuesta.data.nombre} registrado exitosamente`;
     mostrarMensaje(texto, true);
+    await renderUsuarios();
     await mostrarAlertaConfirmacion(texto);
   } finally {
-    setCrudUsuarioEnProceso(false);
+    setGuardandoUsuario(false);
   }
 }
 
 async function editarUsuario(usuarioId) {
-  if (appState.crudUsuarioEnProceso) {
-    return;
-  }
+  if (state.guardandoUsuario) return;
 
-  const usuario = appState.usuariosCache.find((item) => item.id === usuarioId);
+  const usuario = state.usuarios.find((u) => u.id === usuarioId);
   if (!usuario) {
     mostrarMensaje("❌ Usuario no encontrado", false);
     return;
@@ -518,12 +572,12 @@ async function editarUsuario(usuarioId) {
     color_vehiculo: color_vehiculo.trim().toUpperCase(),
   };
 
-  if (Object.values(payload).some((v) => !v)) {
+  if (Object.values(payload).some((value) => !value)) {
     mostrarMensaje("❌ Todos los campos son obligatorios para editar", false);
     return;
   }
 
-  setCrudUsuarioEnProceso(true, "Guardando...");
+  setGuardandoUsuario(true, "Guardando...");
   mostrarMensaje("⏳ Actualizando usuario...", true);
 
   try {
@@ -531,7 +585,6 @@ async function editarUsuario(usuarioId) {
       method: "PUT",
       body: payload,
     });
-
     if (!respuesta.ok) {
       mostrarMensaje(
         `❌ Error: ${respuesta.data?.detail || "No fue posible actualizar"}`,
@@ -542,58 +595,32 @@ async function editarUsuario(usuarioId) {
 
     const texto = `✅ Usuario ${respuesta.data.nombre} actualizado exitosamente`;
     mostrarMensaje(texto, true);
+    await renderUsuarios();
     await mostrarAlertaConfirmacion(texto);
-
-    appState.usuariosCache = appState.usuariosCache.map((item) =>
-      item.id === usuarioId ? { ...item, ...respuesta.data } : item,
-    );
-
-    const fila = document
-      .querySelector(
-        `button[data-action="editar-usuario"][data-usuario-id="${usuarioId}"]`,
-      )
-      ?.closest(".fila-usuarios");
-
-    if (fila) {
-      const columnas = fila.querySelectorAll(":scope > div");
-      if (columnas.length >= 5) {
-        columnas[0].textContent = respuesta.data.nombre;
-        columnas[1].textContent = respuesta.data.identificacion;
-        columnas[2].textContent = respuesta.data.telefono;
-        columnas[3].textContent = respuesta.data.placa;
-        columnas[4].textContent = respuesta.data.estado_pago;
-        columnas[4].className =
-          respuesta.data.estado_pago === "Pendiente/Vencido" ? "error" : "ok";
-      }
-    }
   } finally {
-    setCrudUsuarioEnProceso(false);
+    setGuardandoUsuario(false);
   }
 }
 
 async function eliminarUsuario(usuarioId) {
-  if (appState.crudUsuarioEnProceso) {
-    return;
-  }
+  if (state.guardandoUsuario) return;
 
-  const usuario = appState.usuariosCache.find((item) => item.id === usuarioId);
+  const usuario = state.usuarios.find((u) => u.id === usuarioId);
   if (!usuario) {
     mostrarMensaje("❌ Usuario no encontrado", false);
     return;
   }
 
-  if (!confirm(`¿Eliminar a ${usuario.nombre} (${usuario.identificacion})?`)) {
+  if (!confirm(`¿Eliminar a ${usuario.nombre} (${usuario.identificacion})?`))
     return;
-  }
 
-  setCrudUsuarioEnProceso(true, "Eliminando...");
+  setGuardandoUsuario(true, "Eliminando...");
   mostrarMensaje("⏳ Eliminando usuario...", true);
 
   try {
     const respuesta = await apiRequest(`/usuarios/${usuarioId}`, {
       method: "DELETE",
     });
-
     if (!respuesta.ok) {
       mostrarMensaje(
         `❌ Error: ${respuesta.data?.detail || "No fue posible eliminar"}`,
@@ -604,20 +631,10 @@ async function eliminarUsuario(usuarioId) {
 
     const texto = `✅ ${respuesta.data?.mensaje || "Usuario eliminado exitosamente"}`;
     mostrarMensaje(texto, true);
+    await renderUsuarios();
     await mostrarAlertaConfirmacion(texto);
-
-    appState.usuariosCache = appState.usuariosCache.filter(
-      (item) => item.id !== usuarioId,
-    );
-
-    const fila = document
-      .querySelector(
-        `button[data-action="eliminar-usuario"][data-usuario-id="${usuarioId}"]`,
-      )
-      ?.closest(".fila-usuarios");
-    fila?.remove();
   } finally {
-    setCrudUsuarioEnProceso(false);
+    setGuardandoUsuario(false);
   }
 }
 
@@ -655,6 +672,7 @@ async function asignarCelda(celdaCodigo) {
   const texto = `✅ Celda ${celdaCodigo} asignada a ${respuesta.data.usuario_nombre}`;
   mostrarMensaje(texto, true);
   await mostrarAlertaConfirmacion(texto);
+  await renderCeldas();
 }
 
 async function liberarCelda(celdaCodigo) {
@@ -673,30 +691,12 @@ async function liberarCelda(celdaCodigo) {
   const texto = `✅ Celda ${celdaCodigo} liberada`;
   mostrarMensaje(texto, true);
   await mostrarAlertaConfirmacion(texto);
+  await renderCeldas();
 }
 
-function renderReciboResultado(data) {
-  return `
-    <div class="vehiculo-info">
-      <div class="recibo-grid">
-        <div class="recibo-item"><b>Folio:</b> ${data.folio}</div>
-        <div class="recibo-item"><b>Fecha:</b> ${new Date(data.fecha).toLocaleString()}</div>
-        <div class="recibo-item recibo-item-full"><b>Cliente:</b> ${data.cliente.nombre} - ${data.cliente.identificacion}</div>
-        <div class="recibo-item"><b>Teléfono:</b> ${data.cliente.telefono}</div>
-        <div class="recibo-item"><b>Placa:</b> ${data.cliente.placa}</div>
-        <div class="recibo-item recibo-item-full"><b>Vehículo:</b> ${data.cliente.tipo_vehiculo} ${data.cliente.color_vehiculo}</div>
-        <div class="recibo-item"><b>Concepto:</b> ${data.concepto}</div>
-        <div class="recibo-item"><b>Monto cobrado:</b> $${data.monto_cobrado}</div>
-        <div class="recibo-item recibo-item-full"><b>Periodo de cobertura:</b> ${data.periodo_cobertura}</div>
-        <div class="recibo-item"><b>Días restantes:</b> ${data.dias_restantes_proximo_pago}</div>
-        <div class="recibo-item"><b>Vencimiento:</b> ${new Date(data.fecha_vencimiento).toLocaleDateString()}</div>
-        <div class="recibo-item recibo-item-full"><b>Estado de pago:</b> ${data.cliente.estado_pago}</div>
-      </div>
-    </div>
-  `;
-}
+async function generarRecibo(event) {
+  cancelarEvento(event);
 
-async function generarReciboMensual() {
   const usuarioId = $("#usuario_recibo")?.value;
   const montoCobrado = Number($("#monto_cobrado")?.value);
 
@@ -727,142 +727,103 @@ async function generarReciboMensual() {
   }
 
   const resultadoRecibo = $("#resultado_recibo");
-  if (resultadoRecibo) {
-    resultadoRecibo.innerHTML = renderReciboResultado(respuesta.data);
-  }
+  state.ultimoRecibo = respuesta.data;
+  sessionStorage.setItem(
+    "ultimoReciboGenerado",
+    JSON.stringify(respuesta.data),
+  );
 
-  const texto = "✅ Recibo generado correctamente";
-  mostrarMensaje(texto, true);
-  await mostrarAlertaConfirmacion(texto);
-}
+  if (resultadoRecibo)
+    resultadoRecibo.innerHTML = htmlRecibo(state.ultimoRecibo);
 
-async function abrirSeccion(tipo) {
-  const config = {
-    usuarios: {
-      titulo: "Registro de Usuario (RFU-01)",
-      render: renderFormularioUsuario,
-    },
-    celdas: {
-      titulo: "Asignación/Liberación Manual (RFC-03 / RFC-04)",
-      render: renderModuloCeldas,
-    },
-    historial: {
-      titulo: "Historial de Celdas (RFC-05)",
-      render: renderHistorial,
-    },
-    recibo: {
-      titulo: "Generación de Recibo Mensual",
-      render: renderRecibo,
-    },
-  }[tipo];
-
-  if (!config) {
-    return;
-  }
-
-  appState.seccionActual = tipo;
-  sessionStorage.setItem("seccionActiva", tipo);
-
-  $("#menu-inicio")?.classList.add("oculto");
-  $("#vista-formulario")?.classList.remove("oculto");
-  $("#titulo-form").innerText = config.titulo;
-  $("#campos").innerHTML = "";
-  limpiarMensaje();
-
-  await config.render();
-}
-
-function regresar() {
-  $("#menu-inicio")?.classList.remove("oculto");
-  $("#vista-formulario")?.classList.add("oculto");
-  appState.seccionActual = "";
-  sessionStorage.removeItem("seccionActiva");
-  limpiarMensaje();
+  mostrarMensaje("✅ Recibo generado correctamente", true);
 }
 
 async function manejarClickAccion(event) {
-  const boton = event.target.closest("button[data-action]");
-  if (!boton) {
+  if (state.modalAbierto) {
+    cancelarEvento(event);
     return;
   }
+
+  const boton = event.target.closest("button[data-action]");
+  if (!boton) return;
 
   cancelarEvento(event);
 
   const action = boton.dataset.action;
   switch (action) {
-    case "guardar-usuario": {
-      await registrarUsuario();
-      return;
-    }
-    case "registrar-pago": {
-      await generarReciboMensual();
-      return;
-    }
+    case "guardar-usuario":
+      await registrarUsuario(event);
+      break;
+    case "registrar-pago":
+      await generarRecibo(event);
+      break;
     case "editar-usuario": {
       const id = Number(boton.dataset.usuarioId);
-      if (id) {
-        await editarUsuario(id);
-      }
-      return;
+      if (id) await editarUsuario(id);
+      break;
     }
     case "eliminar-usuario": {
       const id = Number(boton.dataset.usuarioId);
-      if (id) {
-        await eliminarUsuario(id);
-      }
-      return;
+      if (id) await eliminarUsuario(id);
+      break;
     }
     case "asignar-celda": {
       const celda = boton.dataset.celda;
-      if (celda) {
-        await asignarCelda(celda);
-      }
-      return;
+      if (celda) await asignarCelda(celda);
+      break;
     }
     case "liberar-celda": {
       const celda = boton.dataset.celda;
-      if (celda) {
-        await liberarCelda(celda);
-      }
-      return;
+      if (celda) await liberarCelda(celda);
+      break;
     }
     default:
-      return;
+      break;
   }
 }
 
 async function manejarSubmit(event) {
-  const form = event.target.closest("form");
-  if (!form) {
-    return;
-  }
-
   cancelarEvento(event);
+  if (state.modalAbierto) return;
+
+  const form = event.target.closest("form");
+  if (!form) return;
 
   if (form.id === "form-usuario") {
-    await registrarUsuario();
+    await registrarUsuario(event);
     return;
   }
 
   if (form.id === "form-recibo") {
-    await generarReciboMensual();
+    await generarRecibo(event);
   }
 }
 
 async function inicializar() {
-  document.querySelectorAll(".btn-menu[data-seccion]").forEach((boton) => {
-    boton.addEventListener("click", async (event) => {
+  document.addEventListener("submit", bloquearSubmitGlobal, true);
+
+  const ultimoReciboGuardado = sessionStorage.getItem("ultimoReciboGenerado");
+  if (ultimoReciboGuardado) {
+    try {
+      state.ultimoRecibo = JSON.parse(ultimoReciboGuardado);
+    } catch {
+      state.ultimoRecibo = null;
+      sessionStorage.removeItem("ultimoReciboGenerado");
+    }
+  }
+
+  document.querySelectorAll(".btn-menu[data-seccion]").forEach((btn) => {
+    btn.addEventListener("click", async (event) => {
       cancelarEvento(event);
-      const seccion = boton.dataset.seccion;
-      if (seccion) {
-        await abrirSeccion(seccion);
-      }
+      const seccion = btn.dataset.seccion;
+      if (seccion) await abrirSeccion(seccion);
     });
   });
 
   $("#btn-volver")?.addEventListener("click", (event) => {
     cancelarEvento(event);
-    regresar();
+    regresarMenu();
   });
 
   const campos = $("#campos");
@@ -870,9 +831,7 @@ async function inicializar() {
   campos?.addEventListener("submit", manejarSubmit);
 
   const ultimaSeccion = sessionStorage.getItem("seccionActiva");
-  if (ultimaSeccion) {
-    await abrirSeccion(ultimaSeccion);
-  }
+  if (ultimaSeccion) await abrirSeccion(ultimaSeccion);
 }
 
 window.addEventListener("DOMContentLoaded", () => {

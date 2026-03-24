@@ -2,20 +2,18 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Autos Colombia - Sistema Integral</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-
   <div class="contenedor-principal">
-
-    <div id="menu-inicio" class="tarjeta">
+    <section id="menu-inicio" class="tarjeta">
       <header>
         <h1>Autos Colombia</h1>
-        <p class="subtitulo">Control de Parqueadero v2.0 (Manual)</p>
+        <p class="subtitulo">Control de Parqueadero v3.0</p>
       </header>
 
       <div class="grid-menu">
@@ -33,22 +31,20 @@
         </button>
         <button type="button" class="btn-menu" data-seccion="recibo">
           <span class="icono">🧾</span>
-          <b>Recibo</b>
+          <b>Recibos</b>
         </button>
       </div>
-    </div>
+    </section>
 
-    <div id="vista-formulario" class="tarjeta oculto">
+    <section id="vista-formulario" class="tarjeta oculto">
       <div class="cabecera-form">
         <button type="button" id="btn-volver" class="btn-volver">⬅ Volver al menú</button>
         <h2 id="titulo-form">Cargando...</h2>
       </div>
 
       <p id="mensaje" class="mensaje-alerta"></p>
-
       <div id="campos" class="cuerpo-formulario"></div>
-    </div>
-
+    </section>
   </div>
 
   <script src="script.js"></script>
