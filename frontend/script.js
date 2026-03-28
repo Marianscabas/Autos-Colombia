@@ -10,6 +10,7 @@ const state = {
   guardandoUsuario: false,
   modalAbierto: false,
   ultimoRecibo: null,
+  ultimaSalida: null,
 };
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
@@ -156,6 +157,23 @@ function htmlRecibo(data) {
         <div class="recibo-item"><b>Días restantes:</b> ${data.dias_restantes_proximo_pago}</div>
         <div class="recibo-item"><b>Vence:</b> ${new Date(data.fecha_vencimiento).toLocaleDateString()}</div>
         <div class="recibo-item recibo-item-full"><b>Estado:</b> ${data.cliente.estado_pago}</div>
+      </div>
+    </div>
+  `;
+}
+
+function htmlSalidaCobro(data) {
+  return `
+    <div class="vehiculo-info">
+      <div class="recibo-grid">
+        <div class="recibo-item"><b>Placa:</b> ${data.placa}</div>
+        <div class="recibo-item"><b>Tipo:</b> ${data.tipo_vehiculo}</div>
+        <div class="recibo-item"><b>Entrada:</b> ${new Date(data.entrada_at).toLocaleString()}</div>
+        <div class="recibo-item"><b>Salida:</b> ${new Date(data.salida_at).toLocaleString()}</div>
+        <div class="recibo-item"><b>Permanencia:</b> ${data.permanencia_min} minuto(s)</div>
+        <div class="recibo-item"><b>Tarifa por minuto:</b> $${data.tarifa_por_minuto}</div>
+        <div class="recibo-item recibo-item-full"><b>Valor a pagar:</b> <span class="ok">$${data.valor_pagar}</span></div>
+        <div class="recibo-item recibo-item-full"><b>Estado:</b> ${data.estado}</div>
       </div>
     </div>
   `;
@@ -461,6 +479,38 @@ async function renderRecibo() {
   restaurarMensaje();
 }
 
+async function renderSalidas() {
+  const campos = $("#campos");
+  if (!campos) return;
+
+  campos.innerHTML = `
+    <form id="form-salida" class="panel-form" novalidate>
+      <h3 class="panel-titulo">Registrar salida y calcular cobro</h3>
+      <div class="campo-grid">
+        <div class="campo-full">
+          <label>Placa</label>
+          <input type="text" id="salida_placa" placeholder="ABC123" style="text-transform:uppercase" required />
+        </div>
+      </div>
+
+      <button type="button" class="btn-confirmar" data-action="registrar-salida">
+        Registrar salida
+      </button>
+
+      <div id="resultado_salida" style="margin-top:14px;"></div>
+    </form>
+  `;
+
+  if (state.ultimaSalida) {
+    const panel = $("#resultado_salida");
+    if (panel) {
+      panel.innerHTML = htmlSalidaCobro(state.ultimaSalida);
+    }
+  }
+
+  restaurarMensaje();
+}
+
 async function abrirSeccion(seccion) {
   const config = {
     usuarios: {
@@ -475,7 +525,14 @@ async function abrirSeccion(seccion) {
       titulo: "Historial de Celdas (RFC-05)",
       render: renderHistorial,
     },
-    recibo: { titulo: "Generación de Recibo Mensual", render: renderRecibo },
+    recibo: {
+      titulo: "Generación de Recibo Mensual",
+      render: renderRecibo,
+    },
+    salidas: {
+      titulo: "Salida de vehículo y cobro",
+      render: renderSalidas,
+    },
   }[seccion];
 
   if (!config) return;
@@ -739,6 +796,39 @@ async function generarRecibo(event) {
   mostrarMensaje("✅ Recibo generado correctamente", true);
 }
 
+async function registrarSalida(event) {
+  cancelarEvento(event);
+
+  const placa = $("#salida_placa")?.value.trim().toUpperCase();
+  if (!placa) {
+    mostrarMensaje("❌ Debes ingresar una placa", false);
+    return;
+  }
+
+  const respuesta = await apiRequest("/salidas", {
+    method: "POST",
+    body: { placa },
+  });
+
+  if (!respuesta.ok) {
+    mostrarMensaje(
+      `❌ Error: ${respuesta.data?.detail || "No fue posible registrar la salida"}`,
+      false,
+    );
+    return;
+  }
+
+  state.ultimaSalida = respuesta.data;
+  sessionStorage.setItem("ultimaSalidaRegistrada", JSON.stringify(respuesta.data));
+
+  const panel = $("#resultado_salida");
+  if (panel) {
+    panel.innerHTML = htmlSalidaCobro(respuesta.data);
+  }
+
+  mostrarMensaje("✅ Salida registrada y cobro calculado correctamente", true);
+}
+
 async function manejarClickAccion(event) {
   if (state.modalAbierto) {
     cancelarEvento(event);
@@ -757,6 +847,9 @@ async function manejarClickAccion(event) {
       break;
     case "registrar-pago":
       await generarRecibo(event);
+      break;
+    case "registrar-salida":
+      await registrarSalida(event);
       break;
     case "editar-usuario": {
       const id = Number(boton.dataset.usuarioId);
@@ -797,6 +890,11 @@ async function manejarSubmit(event) {
 
   if (form.id === "form-recibo") {
     await generarRecibo(event);
+    return;
+  }
+
+  if (form.id === "form-salida") {
+    await registrarSalida(event);
   }
 }
 
@@ -810,6 +908,16 @@ async function inicializar() {
     } catch {
       state.ultimoRecibo = null;
       sessionStorage.removeItem("ultimoReciboGenerado");
+    }
+  }
+
+  const ultimaSalidaGuardada = sessionStorage.getItem("ultimaSalidaRegistrada");
+  if (ultimaSalidaGuardada) {
+    try {
+      state.ultimaSalida = JSON.parse(ultimaSalidaGuardada);
+    } catch {
+      state.ultimaSalida = null;
+      sessionStorage.removeItem("ultimaSalidaRegistrada");
     }
   }
 
