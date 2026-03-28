@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-import models
+from app import models
 
+TARIFA_POR_MINUTO = 50
 
 VALOR_MENSUAL_FIJO = 120000
 
@@ -367,13 +368,32 @@ def registrar_salida(db: Session, placa: str):
     movimiento.estado = "CERRADO"
     movimiento.permanencia_min = int((salida - movimiento.entrada_at).total_seconds() // 60)
 
+    if movimiento.permanencia_min < 1:
+        movimiento.permanencia_min = 1
+
+    valor_pagar = movimiento.permanencia_min * TARIFA_POR_MINUTO
+
     celda = db.get(models.Celda, movimiento.celda_id)
     if celda:
         celda.estado = "DISPONIBLE"
 
     db.commit()
     db.refresh(movimiento)
-    return movimiento
+
+    return {
+        "id": movimiento.id,
+        "placa": movimiento.placa,
+        "tipo_vehiculo": movimiento.tipo_vehiculo,
+        "celda_id": movimiento.celda_id,
+        "operador_entrada_id": movimiento.operador_entrada_id,
+        "entrada_at": movimiento.entrada_at,
+        "operador_salida_id": movimiento.operador_salida_id,
+        "salida_at": movimiento.salida_at,
+        "permanencia_min": movimiento.permanencia_min,
+        "estado": movimiento.estado,
+        "tarifa_por_minuto": TARIFA_POR_MINUTO,
+        "valor_pagar": valor_pagar,
+    }
 
 
 def consultar_estado_vehiculo(db: Session, placa: str):

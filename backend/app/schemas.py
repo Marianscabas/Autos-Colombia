@@ -86,6 +86,19 @@ class NovedadOut(OrmModel):
     operador_id: int
     created_at: datetime
 
+class SalidaCobroOut(BaseModel):
+    id: int
+    placa: str
+    tipo_vehiculo: str
+    celda_id: int
+    operador_entrada_id: int
+    entrada_at: datetime
+    operador_salida_id: int | None = None
+    salida_at: datetime | None = None
+    permanencia_min: int | None = None
+    estado: str
+    tarifa_por_minuto: int
+    valor_pagar: int
 
 class MovimientoResumen(BaseModel):
     placa: str
@@ -134,3 +147,17 @@ class ReciboMensualOut(BaseModel):
 
 class MessageOut(BaseModel):
     mensaje: str
+
+class SalidaCobroOut(BaseModel):
+    id: int
+    placa: str
+    tipo_vehiculo: str
+    celda_id: int
+    operador_entrada_id: int
+    entrada_at: datetime
+    operador_salida_id: int | None = None
+    salida_at: datetime | None = None
+    permanencia_min: int | None = None
+    estado: str
+    tarifa_por_minuto: int
+    valor_pagar: int

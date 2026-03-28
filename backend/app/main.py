@@ -5,10 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import crud
-import models
-import schemas
-from database import Base, engine, get_db
+from app import crud, models, schemas
+from app.database import Base, engine, get_db
 
 
 app = FastAPI(title="Autos Colombia - API")
@@ -284,7 +282,7 @@ def crear_ingreso(payload: schemas.IngresoIn, db: Session = Depends(get_db)):
         raise _to_http_400(error)
 
 
-@app.post("/salidas", response_model=schemas.MovimientoOut)
+@app.post("/salidas", response_model=schemas.SalidaCobroOut)
 def crear_salida(payload: schemas.SalidaIn, db: Session = Depends(get_db)):
     try:
         return crud.registrar_salida(db, payload.placa)
